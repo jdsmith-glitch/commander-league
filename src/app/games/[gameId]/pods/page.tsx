@@ -355,9 +355,3 @@ function PodCard({
     {players.find((p) => p.id === playerId)?.name || "Unknown"}
   </button>
 ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
