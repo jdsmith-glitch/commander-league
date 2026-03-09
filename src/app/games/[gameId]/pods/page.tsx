@@ -14,6 +14,7 @@ export default function PodsPage({ params }: { params: Promise<{ gameId: string 
   const [seasonId, setSeasonId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     import("@/lib/supabaseClient").then(({ getSupabaseClient }) => setSb(getSupabaseClient()));
@@ -61,6 +62,7 @@ export default function PodsPage({ params }: { params: Promise<{ gameId: string 
     try {
       await queries.generateAndSavePods(sb, gameId, seasonId, activePlayerIds);
       await refreshPods();
+      setEditMode(false);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -74,6 +76,7 @@ export default function PodsPage({ params }: { params: Promise<{ gameId: string 
     setError(null);
     try {
       await clearPods();
+      setEditMode(false);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -145,21 +148,39 @@ export default function PodsPage({ params }: { params: Promise<{ gameId: string 
             {loading ? "Generating..." : "🎲 Generate Optimized Pods"}
           </button>
           {pods.length > 0 && (
-            <button
-              onClick={handleClearPods}
-              disabled={loading || game.locked}
-              style={{
-                color: game.locked ? "#93c5fd" : "#dc2626",
-                background: "transparent",
-                border: "none",
-                padding: 0,
-                cursor: game.locked ? "not-allowed" : "pointer",
-                textDecoration: "underline",
-                font: "inherit",
-              }}
-            >
-              Clear Pods
-            </button>
+            <>
+              <button
+                onClick={() => setEditMode(!editMode)}
+                disabled={game.locked}
+                style={{
+                  color: editMode ? "#dc2626" : "#1d4ed8",
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  cursor: game.locked ? "not-allowed" : "pointer",
+                  textDecoration: "underline",
+                  font: "inherit",
+                  fontWeight: editMode ? "bold" : "normal",
+                }}
+              >
+                {editMode ? "✕ Cancel Edit" : "✎ Edit Pods"}
+              </button>
+              <button
+                onClick={handleClearPods}
+                disabled={loading || game.locked}
+                style={{
+                  color: game.locked ? "#93c5fd" : "#dc2626",
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  cursor: game.locked ? "not-allowed" : "pointer",
+                  textDecoration: "underline",
+                  font: "inherit",
+                }}
+              >
+                Clear Pods
+              </button>
+            </>
           )}
         </div>
       </section>
@@ -168,6 +189,19 @@ export default function PodsPage({ params }: { params: Promise<{ gameId: string 
         <h2>Pods & Results</h2>
         {pods.length === 0 ? (
           <p style={{ color: "#555" }}>No pods generated yet. Generate pods above to get started.</p>
+        ) : editMode ? (
+          <EditPodMode
+            pods={pods}
+            players={players}
+            activePlayerIds={activePlayerIds}
+            gameId={gameId}
+            sb={sb}
+            onSave={async () => {
+              await refreshPods();
+              setEditMode(false);
+            }}
+            onCancel={() => setEditMode(false)}
+          />
         ) : (
           <div>
             {pods.map((pod) => (
@@ -201,6 +235,177 @@ export default function PodsPage({ params }: { params: Promise<{ gameId: string 
         Sign out
       </button>
     </main>
+  );
+}
+
+function EditPodMode({
+  pods,
+  players,
+  activePlayerIds,
+  gameId,
+  sb,
+  onSave,
+  onCancel,
+}: {
+  pods: any[];
+  players: any[];
+  activePlayerIds: string[];
+  gameId: string | null;
+  sb: SupabaseClient | null;
+  onSave: () => Promise<void>;
+  onCancel: () => void;
+}) {
+  const [assignment, setAssignment] = useState<Record<string, string>>(() => {
+    const assign: Record<string, string> = {};
+    pods.forEach((pod) => {
+      pod.playerIds.forEach((playerId: string) => {
+        assign[playerId] = String(pod.podNumber);
+      });
+    });
+    return assign;
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!sb || !gameId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await queries.saveManualPods(sb, gameId, activePlayerIds, assignment, pods.length);
+      await onSave();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const unassignedPlayers = activePlayerIds.filter((id) => !assignment[id]);
+
+  return (
+    <div style={{ border: "1px solid #fbbf24", borderRadius: 8, padding: 16, backgroundColor: "#fffbeb" }}>
+      <h3 style={{ marginTop: 0 }}>✎ Edit Pod Assignments</h3>
+      {error && <p style={{ color: "#b91c1c" }}>{error}</p>}
+
+      <p style={{ color: "#555", fontSize: "0.9rem" }}>
+        Click a player name to assign them to a pod. Unassigned players appear below.
+      </p>
+
+      {unassignedPlayers.length > 0 && (
+        <div style={{ marginTop: 12, padding: 12, backgroundColor: "#fee2e2", borderRadius: 4 }}>
+          <p style={{ marginTop: 0, marginBottom: 8, fontWeight: "bold", color: "#991b1b" }}>
+            Unassigned Players ({unassignedPlayers.length}):
+          </p>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {unassignedPlayers.map((playerId) => (
+              <span
+                key={playerId}
+                style={{
+                  background: "#f87171",
+                  color: "white",
+                  padding: "4px 8px",
+                  borderRadius: 4,
+                  fontSize: "0.9rem",
+                }}
+              >
+                {players.find((p) => p.id === playerId)?.name || "Unknown"}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div style={{ marginTop: 16 }}>
+        {pods.map((pod) => {
+          const podPlayers = activePlayerIds.filter((id) => assignment[id] === String(pod.podNumber));
+          return (
+            <div key={pod.id} style={{ marginBottom: 12, padding: 12, border: "1px solid #ddd", borderRadius: 4 }}>
+              <h4 style={{ marginTop: 0, marginBottom: 8 }}>Pod {pod.podNumber}</h4>
+              {podPlayers.length === 0 ? (
+                <p style={{ color: "#999", margin: 0 }}>No players assigned</p>
+              ) : (
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {podPlayers.map((playerId) => (
+                    <button
+                      key={playerId}
+                      onClick={() => {
+                        const newAssign = { ...assignment };
+                        delete newAssign[playerId];
+                        setAssignment(newAssign);
+                      }}
+                      style={{
+                        background: "#dbeafe",
+                        border: "1px solid #0084ff",
+                        padding: "6px 10px",
+                        borderRadius: 4,
+                        cursor: "pointer",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      {players.find((p) => p.id === playerId)?.name || "Unknown"} ✕
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {unassignedPlayers.map((playerId) => (
+                  <button
+                    key={playerId}
+                    onClick={() => setAssignment({ ...assignment, [playerId]: String(pod.podNumber) })}
+                    style={{
+                      background: "transparent",
+                      border: "1px dashed #999",
+                      padding: "6px 10px",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                      fontSize: "0.9rem",
+                      color: "#666",
+                    }}
+                  >
+                    {players.find((p) => p.id === playerId)?.name || "Unknown"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: 16, display: "flex", gap: 12 }}>
+        <button
+          onClick={handleSave}
+          disabled={saving || unassignedPlayers.length > 0}
+          style={{
+            color: unassignedPlayers.length > 0 ? "#93c5fd" : "#166534",
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            cursor: unassignedPlayers.length > 0 ? "not-allowed" : "pointer",
+            textDecoration: "underline",
+            font: "inherit",
+            fontWeight: "bold",
+          }}
+        >
+          {saving ? "Saving..." : "✓ Save Changes"}
+        </button>
+        <button
+          onClick={onCancel}
+          disabled={saving}
+          style={{
+            color: "#dc2626",
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            textDecoration: "underline",
+            font: "inherit",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 
