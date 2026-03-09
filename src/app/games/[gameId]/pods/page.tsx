@@ -338,23 +338,23 @@ function PodCard({
         <div style={{ marginTop: 12 }}>
           <p style={{ marginBottom: 8 }}>Winner:</p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {pod.playerIds.map((playerId) => (
-              <button
-                key={playerId}
-                onClick={() => handleSetWinner(playerId)}
-                disabled={loading || gameLocked}
-                style={{
-                  background: pod.winnerId === playerId ? "#86efac" : "transparent",
-                  border: "1px solid #ddd",
-                  padding: "6px 12px",
-                  borderRadius: 4,
-                  cursor: gameLocked ? "not-allowed" : "pointer",
-                  opacity: gameLocked ? 0.5 : 1,
-                }}
-              >
-                {players.find((p) => p.id === playerId)?.name || "Unknown"}
-              </button>
-            ))}
+            {pod.playerIds.map((playerId: string) => (
+  <button
+    key={playerId}
+    onClick={() => handleSetWinner(playerId)}
+    disabled={loading || gameLocked}
+    style={{
+      background: pod.winnerId === playerId ? "#86efac" : "transparent",
+      border: "1px solid #ddd",
+      padding: "6px 12px",
+      borderRadius: 4,
+      cursor: gameLocked ? "not-allowed" : "pointer",
+      opacity: gameLocked ? 0.5 : 1,
+    }}
+  >
+    {players.find((p) => p.id === playerId)?.name || "Unknown"}
+  </button>
+))}
           </div>
         </div>
       )}
