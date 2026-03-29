@@ -40,7 +40,7 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <main style={{ padding: 30, fontFamily: "sans-serif", maxWidth: 1100 }}>
+    <main style={{ padding: 30, fontFamily: "sans-serif", maxWidth: 1200 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1>Leaderboard - Season 3</h1>
         <button
@@ -61,6 +61,8 @@ export default function LeaderboardPage() {
 
       <p style={{ color: "#333", marginTop: 6, fontSize: "0.95rem" }}>
         Scoring: Win <b>{SCORING.win}</b> pts, Draw <b>{SCORING.draw}</b> pts, Loss <b>{SCORING.loss}</b> pt, No-show <b>{SCORING.noShow}</b> pts. Byes count as wins.
+        <br />
+        Tiebreakers: Points → Wins → OWP (Opponent Win %)
       </p>
 
       {players.length === 0 ? (
@@ -70,7 +72,7 @@ export default function LeaderboardPage() {
           <table style={{ borderCollapse: "collapse", width: "100%", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
             <thead>
               <tr style={{ backgroundColor: "#1f2937", color: "white" }}>
-                {["Rank", "Player", "Points", "W", "D", "L", "Byes", "No-shows", "Played"].map((h) => (
+                {["Rank", "Player", "Points", "W", "D", "L", "Byes", "No-shows", "Played", "OWP"].map((h) => (
                   <th
                     key={h}
                     style={{
@@ -142,8 +144,17 @@ export default function LeaderboardPage() {
                   <td style={{ padding: "12px 10px", color: "#1f2937", borderRight: "1px solid #e5e7eb" }}>
                     {row.noShows}
                   </td>
-                  <td style={{ padding: "12px 10px", color: "#1f2937" }}>
+                  <td style={{ padding: "12px 10px", color: "#1f2937", borderRight: "1px solid #e5e7eb" }}>
                     {row.played}
+                  </td>
+                  <td
+                    style={{
+                      padding: "12px 10px",
+                      fontWeight: "600",
+                      color: "#0891b2",
+                    }}
+                  >
+                    {(row.owp * 100).toFixed(1)}%
                   </td>
                 </tr>
               ))}

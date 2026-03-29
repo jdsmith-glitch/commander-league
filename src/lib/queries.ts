@@ -24,9 +24,11 @@ export type LeaderboardStat = {
   byes: number;
   noShows: number;
   played: number;
+  owp: number;
 };
 
 export const SCORING = { win: 5, draw: 2, loss: 1, noShow: 0 };
+const OWP_FLOOR = 0.33;
 
 // ========== LEAGUES ==========
 export async function getOrCreateLeague(sb: SupabaseClient, userId: string) {
@@ -617,6 +619,7 @@ export async function calculateSeasonLeaderboard(
       byes: 0,
       noShows: 0,
       played: 0,
+      owp: 0,
     })
   );
 
@@ -698,9 +701,52 @@ export async function calculateSeasonLeaderboard(
     }
   }
 
-  const sorted = Array.from(stats.values()).sort((a, b) => {
+  // Calculate OWP (Opponent Win Percentage)
+  const allStats = Array.from(stats.values());
+
+  for (const player of allStats) {
+    const opponentIds = new Set<string>();
+
+    // Find all opponents this player faced
+    for (const [podId, playerIds] of playersByPod.entries()) {
+      if (playerIds.includes(player.playerId)) {
+        // This player was in this pod
+        playerIds.forEach((pid) => {
+          if (pid !== player.playerId) {
+            opponentIds.add(pid);
+          }
+        });
+      }
+    }
+
+    if (opponentIds.size === 0) {
+      player.owp = 0;
+    } else {
+      let owpSum = 0;
+      for (const oppId of opponentIds) {
+        const oppStats = stats.get(oppId);
+        if (!oppStats) continue;
+
+        // Calculate opponent's win percentage
+        let oppWinPercentage = 0;
+        if (oppStats.played > 0) {
+          oppWinPercentage = oppStats.wins / oppStats.played;
+        }
+
+        // Apply floor
+        oppWinPercentage = Math.max(oppWinPercentage, OWP_FLOOR);
+        owpSum += oppWinPercentage;
+      }
+
+      player.owp = owpSum / opponentIds.size;
+    }
+  }
+
+  // Sort by: Points (desc) → Wins (desc) → OWP (desc) → Name (asc)
+  const sorted = allStats.sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points;
     if (b.wins !== a.wins) return b.wins - a.wins;
+    if (b.owp !== a.owp) return b.owp - a.owp;
     return a.name.localeCompare(b.name);
   });
 
