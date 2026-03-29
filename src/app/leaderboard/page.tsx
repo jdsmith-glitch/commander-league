@@ -59,21 +59,27 @@ export default function LeaderboardPage() {
         </button>
       </div>
 
-      <p style={{ color: "#555", marginTop: 6 }}>
-        Scoring: Win {SCORING.win}, Draw {SCORING.draw}, Loss {SCORING.loss}, No-show {SCORING.noShow}. Byes count as wins.
+      <p style={{ color: "#333", marginTop: 6, fontSize: "0.95rem" }}>
+        Scoring: Win <b>{SCORING.win}</b> pts, Draw <b>{SCORING.draw}</b> pts, Loss <b>{SCORING.loss}</b> pt, No-show <b>{SCORING.noShow}</b> pts. Byes count as wins.
       </p>
 
       {players.length === 0 ? (
         <p>No players yet.</p>
       ) : (
         <div style={{ overflowX: "auto", marginTop: 20 }}>
-          <table style={{ borderCollapse: "collapse", width: "100%" }}>
+          <table style={{ borderCollapse: "collapse", width: "100%", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
             <thead>
-              <tr style={{ backgroundColor: "#f9fafb" }}>
+              <tr style={{ backgroundColor: "#1f2937", color: "white" }}>
                 {["Rank", "Player", "Points", "W", "D", "L", "Byes", "No-shows", "Played"].map((h) => (
                   <th
                     key={h}
-                    style={{ textAlign: "left", borderBottom: "2px solid #ddd", padding: "12px 6px", fontWeight: "600" }}
+                    style={{
+                      textAlign: "left",
+                      padding: "14px 10px",
+                      fontWeight: "700",
+                      fontSize: "0.95rem",
+                      borderRight: "1px solid #374151",
+                    }}
                   >
                     {h}
                   </th>
@@ -82,20 +88,63 @@ export default function LeaderboardPage() {
             </thead>
             <tbody>
               {leaderboard.map((row, i) => (
-                <tr key={row.playerId} style={{ backgroundColor: i % 2 === 0 ? "#f9fafb" : "white" }}>
-                  <td style={{ padding: "8px 6px", borderBottom: "1px solid #f0f0f0" }}>
-                    <b>{i + 1}</b>
+                <tr
+                  key={row.playerId}
+                  style={{
+                    backgroundColor: i % 2 === 0 ? "#ffffff" : "#f3f4f6",
+                    borderBottom: "1px solid #e5e7eb",
+                  }}
+                >
+                  <td
+                    style={{
+                      padding: "12px 10px",
+                      fontWeight: "700",
+                      fontSize: "1.1rem",
+                      color: "#1f2937",
+                      borderRight: "1px solid #e5e7eb",
+                    }}
+                  >
+                    {i + 1}
                   </td>
-                  <td style={{ padding: "8px 6px", borderBottom: "1px solid #f0f0f0" }}>{row.name}</td>
-                  <td style={{ padding: "8px 6px", borderBottom: "1px solid #f0f0f0" }}>
-                    <b>{row.points}</b>
+                  <td
+                    style={{
+                      padding: "12px 10px",
+                      fontWeight: "600",
+                      color: "#1f2937",
+                      borderRight: "1px solid #e5e7eb",
+                    }}
+                  >
+                    {row.name}
                   </td>
-                  <td style={{ padding: "8px 6px", borderBottom: "1px solid #f0f0f0" }}>{row.wins}</td>
-                  <td style={{ padding: "8px 6px", borderBottom: "1px solid #f0f0f0" }}>{row.draws}</td>
-                  <td style={{ padding: "8px 6px", borderBottom: "1px solid #f0f0f0" }}>{row.losses}</td>
-                  <td style={{ padding: "8px 6px", borderBottom: "1px solid #f0f0f0" }}>{row.byes}</td>
-                  <td style={{ padding: "8px 6px", borderBottom: "1px solid #f0f0f0" }}>{row.noShows}</td>
-                  <td style={{ padding: "8px 6px", borderBottom: "1px solid #f0f0f0" }}>{row.played}</td>
+                  <td
+                    style={{
+                      padding: "12px 10px",
+                      fontWeight: "700",
+                      fontSize: "1.1rem",
+                      color: "#059669",
+                      borderRight: "1px solid #e5e7eb",
+                    }}
+                  >
+                    {row.points}
+                  </td>
+                  <td style={{ padding: "12px 10px", color: "#1f2937", borderRight: "1px solid #e5e7eb" }}>
+                    {row.wins}
+                  </td>
+                  <td style={{ padding: "12px 10px", color: "#1f2937", borderRight: "1px solid #e5e7eb" }}>
+                    {row.draws}
+                  </td>
+                  <td style={{ padding: "12px 10px", color: "#1f2937", borderRight: "1px solid #e5e7eb" }}>
+                    {row.losses}
+                  </td>
+                  <td style={{ padding: "12px 10px", color: "#1f2937", borderRight: "1px solid #e5e7eb" }}>
+                    {row.byes}
+                  </td>
+                  <td style={{ padding: "12px 10px", color: "#1f2937", borderRight: "1px solid #e5e7eb" }}>
+                    {row.noShows}
+                  </td>
+                  <td style={{ padding: "12px 10px", color: "#1f2937" }}>
+                    {row.played}
+                  </td>
                 </tr>
               ))}
             </tbody>
