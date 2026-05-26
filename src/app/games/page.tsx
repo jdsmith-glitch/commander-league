@@ -9,6 +9,8 @@ import { useAuth, useGames, useSeasons } from "@/lib/hooks";
 export default function GamesPage() {
   const [sb, setSb] = useState<SupabaseClient | null>(null);
   const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     import("@/lib/supabaseClient").then(({ getSupabaseClient }) => setSb(getSupabaseClient()));
@@ -16,6 +18,7 @@ export default function GamesPage() {
 
   const { authReady, leagueId } = useAuth(sb);
   const { seasons } = useSeasons(sb, leagueId);
+  const { games, error: gamesError, add: addGame, refresh: refreshGames } = useGames(sb, selectedSeasonId);
 
   // Set default season on first load
   useEffect(() => {
@@ -26,7 +29,17 @@ export default function GamesPage() {
     }
   }, [seasons, selectedSeasonId]);
 
-  const { games, error } = useGames(sb, selectedSeasonId);
+  async function handleAddGame() {
+    setLoading(true);
+    setError(null);
+    try {
+      await addGame();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   async function signOut() {
     if (!sb) return;
@@ -50,7 +63,7 @@ export default function GamesPage() {
   return (
     <main style={{ padding: 30, fontFamily: "sans-serif", maxWidth: 1100 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Games</h1>
+        <h1>Games Manager</h1>
         <button
           onClick={() => (window.location.href = "/")}
           style={{
@@ -86,14 +99,30 @@ export default function GamesPage() {
             </option>
           ))}
         </select>
+        <button
+          onClick={handleAddGame}
+          disabled={loading}
+          style={{
+            color: "#166534",
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            cursor: loading ? "not-allowed" : "pointer",
+            textDecoration: "underline",
+            font: "inherit",
+            fontWeight: "bold",
+          }}
+        >
+          {loading ? "Adding..." : "+ Add Game"}
+        </button>
       </div>
 
-      {error && <p style={{ color: "#b91c1c", marginTop: 10 }}>{error}</p>}
+      {(error || gamesError) && <p style={{ color: "#b91c1c", marginTop: 10 }}>{error || gamesError}</p>}
 
       <section style={{ marginTop: 30 }}>
-        <h2>Games in {seasons.find((s) => s.id === selectedSeasonId)?.name || "Season"}</h2>
+        <h2>Games</h2>
         {games.length === 0 ? (
-          <p style={{ color: "#555" }}>No games yet. Create your first game below.</p>
+          <p style={{ color: "#555" }}>No games yet. Create your first game above.</p>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
             {games.map((game) => (
