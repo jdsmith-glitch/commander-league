@@ -22,7 +22,7 @@ export default function GameDetailPage({ params }: { params: Promise<{ gameId: s
   }, [params]);
 
   const { authReady, leagueId } = useAuth(sb);
-  const { players } = usePlayers(sb, leagueId);
+  const { players, loading: playersLoading } = usePlayers(sb, leagueId);
   const { activePlayerIds, toggle, selectAll, clearAll, carryFromPrevious } = useGameAttendance(sb, gameId);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function GameDetailPage({ params }: { params: Promise<{ gameId: s
     window.location.href = "/login";
   }
 
-  if (!sb || !authReady || !game) {
+  if (!sb || !authReady || !game || playersLoading) {
     return <main style={{ padding: 30, fontFamily: "sans-serif" }}>Loading…</main>;
   }
 
@@ -177,33 +177,37 @@ export default function GameDetailPage({ params }: { params: Promise<{ gameId: s
           </span>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10, marginTop: 12 }}>
-          {players.map((p) => {
-            const checked = activePlayerIds.includes(p.id);
-            return (
-              <label
-                key={p.id}
-                style={{
-                  border: "1px solid #ddd",
-                  padding: 10,
-                  borderRadius: 8,
-                  display: "flex",
-                  gap: 8,
-                  alignItems: "center",
-                  opacity: game.locked ? 0.7 : 1,
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  disabled={!!game.locked}
-                  onChange={() => toggle(p.id)}
-                />
-                <span>{p.name}</span>
-              </label>
-            );
-          })}
-        </div>
+        {players.length === 0 ? (
+          <p style={{ color: "#555", marginTop: 12 }}>No players added yet. Go to the Players tab to add players.</p>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10, marginTop: 12 }}>
+            {players.map((p) => {
+              const checked = activePlayerIds.includes(p.id);
+              return (
+                <label
+                  key={p.id}
+                  style={{
+                    border: "1px solid #ddd",
+                    padding: 10,
+                    borderRadius: 8,
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "center",
+                    opacity: game.locked ? 0.7 : 1,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={!!game.locked}
+                    onChange={() => toggle(p.id)}
+                  />
+                  <span>{p.name}</span>
+                </label>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section style={{ marginTop: 30 }}>
