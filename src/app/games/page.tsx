@@ -4,19 +4,29 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { useAuth, useGames } from "@/lib/hooks";
-
-const SEASON_3_ID = "6eb519c9-faf4-4f03-94f5-b85a32bc2c62";
+import { useAuth, useGames, useSeasons } from "@/lib/hooks";
 
 export default function GamesPage() {
   const [sb, setSb] = useState<SupabaseClient | null>(null);
+  const [selectedSeasonId, setSelectedSeasonId] = useState<string | null>(null);
 
   useEffect(() => {
     import("@/lib/supabaseClient").then(({ getSupabaseClient }) => setSb(getSupabaseClient()));
   }, []);
 
   const { authReady, leagueId } = useAuth(sb);
-  const { games, error } = useGames(sb, SEASON_3_ID);
+  const { seasons } = useSeasons(sb, leagueId);
+
+  // Set default season on first load
+  useEffect(() => {
+    if (seasons.length > 0 && !selectedSeasonId) {
+      // Default to Season 4, fall back to first season
+      const season4 = seasons.find((s) => s.name === "Season 4");
+      setSelectedSeasonId(season4?.id || seasons[0].id);
+    }
+  }, [seasons, selectedSeasonId]);
+
+  const { games, error } = useGames(sb, selectedSeasonId);
 
   async function signOut() {
     if (!sb) return;
@@ -40,7 +50,7 @@ export default function GamesPage() {
   return (
     <main style={{ padding: 30, fontFamily: "sans-serif", maxWidth: 1100 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Season 3 - Games</h1>
+        <h1>Games</h1>
         <button
           onClick={() => (window.location.href = "/")}
           style={{
@@ -57,12 +67,33 @@ export default function GamesPage() {
         </button>
       </div>
 
+      <div style={{ marginTop: 20, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <label style={{ fontWeight: "600" }}>Season:</label>
+        <select
+          value={selectedSeasonId || ""}
+          onChange={(e) => setSelectedSeasonId(e.target.value)}
+          style={{
+            padding: "8px 12px",
+            borderRadius: 4,
+            border: "1px solid #ddd",
+            fontSize: "1rem",
+            cursor: "pointer",
+          }}
+        >
+          {seasons.map((season) => (
+            <option key={season.id} value={season.id}>
+              {season.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {error && <p style={{ color: "#b91c1c", marginTop: 10 }}>{error}</p>}
 
       <section style={{ marginTop: 30 }}>
-        <h2>All Games</h2>
+        <h2>Games in {seasons.find((s) => s.id === selectedSeasonId)?.name || "Season"}</h2>
         {games.length === 0 ? (
-          <p style={{ color: "#555" }}>No games found.</p>
+          <p style={{ color: "#555" }}>No games yet. Create your first game below.</p>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
             {games.map((game) => (
